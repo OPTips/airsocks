@@ -1,0 +1,25 @@
+services:
+  airsocks:
+    build: .
+    container_name: airsocks
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./configs:/configs:ro
+    environment:
+      - TZ=UTC
+      - CHECK_INTERVAL=30
+      - MAX_HANDSHAKE_AGE=180
+      - MAX_RECONNECT_ATTEMPTS=5
+      - RECONNECT_DELAY=10
+      - LOG_LEVEL=INFO
+      - CONNECTIVITY_CHECK_HOST=1.1.1.1

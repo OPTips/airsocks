@@ -1,0 +1,6 @@
+configs/
+logs/
+__pycache__/
+*.pyc
+.git/
+*.md
