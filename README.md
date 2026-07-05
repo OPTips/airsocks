@@ -99,3 +99,4 @@ Le trafic autorisé hors tunnel se limite aux paquets UDP vers le serveur VPN (n
 - IPv6 est désactivé dans le conteneur ; si vos configurations WireGuard incluent des adresses IPv6, elles sont retirées automatiquement
 - Les directives `DNS` et `PostUp`/`PostDown` sont retirées des configs avant usage — le DNS reste sécurisé car tout le trafic transite par le tunnel (`AllowedIPs = 0.0.0.0/0`)
 - Le conteneur nécessite les capabilities `NET_ADMIN` et `SYS_MODULE` ainsi que l'accès à `/dev/net/tun`
+- Les plages d'adresses privées (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) sont explicitement exclues du tunnel VPN, pour que les réponses du proxy vers des clients de votre réseau local (si vous exposez le port sur l'hôte) repartent bien par la passerelle normale au lieu d'être aspirées dans le tunnel. Le trafic public reste intégralement forcé dans le tunnel — cette exception ne concerne que le retour vers votre LAN

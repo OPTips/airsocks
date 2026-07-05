@@ -7,6 +7,14 @@ from pathlib import Path
 from typing import Optional
 
 
+# RFC1918 private ranges kept outside the WireGuard tunnel so that replies to
+# clients on the local network (e.g. the SOCKS5 proxy answering a LAN peer)
+# route back out via the container's normal gateway instead of being pulled
+# into wg0 by wg-quick's full-tunnel (AllowedIPs = 0.0.0.0/0) routes. Public
+# internet traffic is unaffected and still fully forced through the tunnel.
+PRIVATE_RANGES = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+
 class VPNManager:
     def __init__(self, logger: logging.Logger, config) -> None:
         self.logger = logger
@@ -75,6 +83,35 @@ class VPNManager:
         if result.returncode == 0:
             self.logger.warning("Stale interface %s found — removing it", interface)
             subprocess.run(["ip", "link", "delete", interface], capture_output=True)
+
+    def _get_default_route(self) -> Optional[tuple[str, str]]:
+        """Return (gateway_ip, device) of the container's non-VPN default route."""
+        result = subprocess.run(
+            ["ip", "route", "show", "default"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            match = re.search(r"^default via (\S+) dev (\S+)", line)
+            if match and match.group(2) != "wg0":
+                return match.group(1), match.group(2)
+        return None
+
+    def _exempt_private_ranges(self) -> None:
+        """Keep RFC1918 traffic on the container's normal gateway, not wg0."""
+        gateway = self._get_default_route()
+        if gateway is None:
+            self.logger.warning("Could not determine default gateway — LAN traffic may route via VPN")
+            return
+        gateway_ip, device = gateway
+        for cidr in PRIVATE_RANGES:
+            subprocess.run(
+                ["ip", "route", "replace", cidr, "via", gateway_ip, "dev", device],
+                capture_output=True,
+                timeout=5,
+            )
+        self.logger.info("Excluded private ranges (%s) from VPN tunnel via %s", ", ".join(PRIVATE_RANGES), device)
 
     # ------------------------------------------------------------------
     # iptables kill switch
@@ -150,6 +187,7 @@ class VPNManager:
                 self.logger.info("VPN up on interface %s", interface)
                 endpoint_ip, endpoint_port = self._parse_endpoint(config_path)
                 self._enable_kill_switch(interface, endpoint_ip, endpoint_port)
+                self._exempt_private_ranges()
                 return True
             self.logger.error("wg-quick up failed: %s", result.stderr.strip())
             return False

@@ -1,1 +1,2 @@
 configs/*.conf
+app/__pycache__
