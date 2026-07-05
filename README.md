@@ -31,7 +31,14 @@ configs/
 
 **2. Démarrer**
 
+Le `compose.yml` référence l'image publiée sur GitHub Container Registry (`ghcr.io/optips/airsocks:latest`). Deux options :
+
 ```bash
+# Option A — récupérer l'image déjà construite (plus rapide)
+docker pull ghcr.io/optips/airsocks:latest
+docker compose up -d
+
+# Option B — construire l'image localement depuis les sources
 docker compose up --build -d
 ```
 

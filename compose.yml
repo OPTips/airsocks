@@ -1,5 +1,6 @@
 services:
   airsocks:
+    image: ghcr.io/optips/airsocks:latest
     build: .
     container_name: airsocks
     restart: unless-stopped
