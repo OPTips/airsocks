@@ -9,7 +9,6 @@ on:
       - 'Dockerfile'
       - 'requirements.txt'
       - 'app/**/*'
-      - 'compose.yml'
       - '.github/workflows/build.yml'
 
 jobs:
